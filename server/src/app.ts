@@ -9,6 +9,7 @@ import { getData, clearCache } from "./dataService";
 import { normalizeText } from "./normalize";
 import { buildSummary } from "./stats";
 
+function createApp() {
 const env = getEnv();
 
 const app = express();
@@ -328,4 +329,26 @@ app.get("/api/export", requireAuth, async (req: AuthedRequest, res) => {
   res.send(buffer);
 });
 
-export default app;
+return app;
+}
+
+// Safe export: catch init errors so Vercel returns HTTP 500 instead of FUNCTION_INVOCATION_FAILED
+let _app: express.Application | null = null;
+let _initError: unknown = null;
+try {
+  _app = createApp();
+} catch (e) {
+  _initError = e;
+  // eslint-disable-next-line no-console
+  console.error("[startup] App initialization failed:", e);
+}
+
+const fallback = express();
+fallback.use((_req, res) => {
+  res.status(500).json({
+    error: "Server configuration error",
+    details: _initError instanceof Error ? _initError.message : String(_initError),
+  });
+});
+
+export default (_app ?? fallback) as express.Application;
