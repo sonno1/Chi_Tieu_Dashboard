@@ -315,7 +315,6 @@ export function DashboardPage() {
   useEffect(() => {
     if (!isAuthed) return;
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed]);
 
   useEffect(() => {
@@ -375,8 +374,7 @@ export function DashboardPage() {
   }, [transactions, month, bank, person, role]);
 
   const summary = useMemo(() => buildSummaryClient(baseFiltered, rules), [baseFiltered, rules]);
-
-  if (!isAuthed) return null;
+  const currentSession = state.status === "authed" ? state.session : null;
 
   const guestMonthCode = useMemo(() => {
     if (!month) return "";
@@ -388,8 +386,11 @@ export function DashboardPage() {
 
   const guestPaymentContent = useMemo(() => {
     if (!month) return "";
-    return `${state.session.username} thanh toán tiền đặt hộ tháng ${guestMonthCode}`;
-  }, [month, state.session.username, guestMonthCode]);
+    if (!currentSession) return "";
+    return `${currentSession.username} thanh toán tiền đặt hộ tháng ${guestMonthCode}`;
+  }, [month, currentSession, guestMonthCode]);
+
+  if (!isAuthed) return null;
 
   async function copyText(text: string) {
     await navigator.clipboard.writeText(text);
@@ -404,7 +405,7 @@ export function DashboardPage() {
           <h1 className="text-lg font-semibold">
             {role === "admin" ? "Bảng điều khiển (Admin)" : "Bảng điều khiển (Guest)"}
           </h1>
-          <div className="text-sm text-slate-600">{state.session.personName ?? ""}</div>
+          <div className="text-sm text-slate-600">{currentSession?.personName ?? ""}</div>
         </div>
         <div className="flex items-center gap-2">
           {role === "admin" ? (
